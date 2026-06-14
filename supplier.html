@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>供应商管理 - Muses</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    .supplier-page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+
+    /* ====== Filters ====== */
+    .supplier-filters{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .supplier-filters-left{display:flex;align-items:center;gap:8px}
+    .supplier-filters .filter-input{height:36px;padding:0 12px;border:1px solid var(--border-color-input);border-radius:var(--radius-8);font-size:14px;color:var(--t1);outline:none;background:#fff;transition:all 0.15s;width:200px;line-height:1.5715}
+    .supplier-filters .filter-input:hover{border-color:var(--primary);background:#F7F8F9}
+    .supplier-filters .filter-input:focus{border-color:var(--primary);box-shadow:0 0 0 2px rgba(28,100,242,0.08)}
+    .supplier-filters .filter-input::placeholder{color:var(--text-placeholder)}
+    .supplier-filters .filter-select{appearance:none;-webkit-appearance:none;height:36px;padding:0 32px 0 12px;border:1px solid var(--border-color-input);border-radius:var(--radius-12);font-size:14px;color:var(--t1);outline:none;cursor:pointer;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath d='M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z' fill='%23878F9B'/%3E%3C/svg%3E") no-repeat right 8px center;transition:all 0.15s;min-width:120px;line-height:1.5715}
+    .supplier-filters .filter-select:hover,.supplier-filters .filter-select:focus{border-color:var(--primary);background:#F7F8F9}
+    .supplier-table{table-layout:fixed}
+    .supplier-table .ant-table-header{overflow:hidden}
+    .supplier-table .ant-table-thead th{font-size:14px!important;font-weight:600!important;color:var(--text-table-header)!important;background:var(--bg-header)!important;border-bottom:1px solid var(--border-color)!important;padding:8px 16px!important;text-align:left!important;letter-spacing:0.3px!important}
+    .supplier-table th:last-child,.supplier-table td:last-child{position:sticky;right:0;background:#fff;z-index:1}
+    .supplier-table th:last-child{background:var(--bg-header)}
+    .supplier-table tbody tr:hover td:last-child{background:#F7F8F9}
+
+    /* ====== Drawer ====== */
+    .drawer-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:1000;opacity:0;transition:opacity 0.25s;pointer-events:none}
+    .drawer-overlay.open{opacity:1;pointer-events:auto}
+    .drawer{position:fixed;top:0;right:-760px;width:760px;max-width:94vw;height:100vh;background:#fff;box-shadow:var(--shadow-lg);z-index:1001;display:flex;flex-direction:column;transition:right 0.3s ease}
+    .drawer.open{right:0}
+    .drawer-header{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--border-color-strong)}
+    .drawer-header h3{font-size:16px;font-weight:600;color:var(--t1)}
+    .drawer-close{width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:18px;color:var(--t3);border-radius:var(--radius-4);display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+    .drawer-close:hover{background:var(--bg-surface);color:var(--t2)}
+    .drawer-body{padding:24px;flex:1;overflow-y:auto;min-height:0}
+    .drawer-footer{flex-shrink:0;padding:16px 24px;display:flex;gap:8px;justify-content:flex-end;border-top:1px solid var(--border-color)}
+
+    /* ====== Mini Pagination ====== */
+    .ant-pagination-mini{display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:12px 0;font-size:13px}
+    .ant-pagination-total-text{color:var(--t3);line-height:32px;white-space:nowrap;font-size:13px;vertical-align:middle}
+    .ant-pagination-options{position:relative;display:inline-flex;align-items:center}
+    .ant-pagination-options select{appearance:none;-webkit-appearance:none;height:32px;padding:0 28px 0 8px;border:1px solid var(--border-color-input);border-radius:var(--radius-8);font-size:13px;color:var(--t1);outline:none;cursor:pointer;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath d='M11.9999 13.1714L16.9497 8.22168L18.3639 9.63589L11.9999 15.9999L5.63599 9.63589L7.0502 8.22168L11.9999 13.1714Z' fill='%234C596A'/%3E%3C/svg%3E") no-repeat right 6px center;line-height:1.5715;transition:all 0.15s}
+    .ant-pagination-options select:hover{border-color:var(--primary)}
+    .ant-pagination-options-arrow{display:none}
+    .ant-pagination-pages{display:inline-flex;align-items:center;gap:4px;list-style:none;margin:0;padding:0}
+    .ant-pagination-pages li{display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:32px;padding:0 4px;border:1px solid var(--border-color-input);border-radius:var(--radius-8);font-size:13px;color:var(--t2);cursor:pointer;transition:all 0.15s;line-height:22px;user-select:none}
+    .ant-pagination-pages li:hover{border-color:var(--primary);color:var(--primary)}
+    .ant-pagination-pages li.ant-pagination-item-active{background:var(--primary);color:#fff;border-color:var(--primary);cursor:default}
+    .ant-pagination-pages li.ant-pagination-item-active:hover{color:#fff}
+    .ant-pagination-pages li.ant-pagination-disabled{color:var(--t4);cursor:not-allowed}
+    .ant-pagination-pages li.ant-pagination-disabled:hover{border-color:var(--border-color-input);color:var(--t4)}
+    .ant-pagination-pages li.ant-pagination-item-ellipsis{cursor:default;border-color:transparent;letter-spacing:2px}
+    .ant-pagination-pages li.ant-pagination-item-ellipsis:hover{border-color:transparent;color:var(--t1)}
+    .ant-pagination-prev,.ant-pagination-next{font-family:var(--font-mono);font-size:13px}
+
+    /* ====== Supplier Model Config ====== */
+    .supplier-models-section{margin-top:8px;padding-top:16px;border-top:1px solid var(--border-color)}
+    .supplier-models-header{font-size:15px;font-weight:600;color:var(--t1);margin-bottom:12px}
+    .supplier-models-container{display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
+    .supplier-model-card{border:1px solid var(--border-color-input);border-radius:var(--radius-12);padding:16px;background:#FAFBFC;position:relative}
+    .supplier-model-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .supplier-model-card-title{font-size:14px;font-weight:600;color:var(--t1)}
+    .supplier-model-del-btn{background:none;border:1px solid #F53F3F;color:#F53F3F;border-radius:var(--radius-8);padding:2px 10px;font-size:12px;cursor:pointer;transition:all 0.15s}
+    .supplier-model-del-btn:hover{background:#F53F3F;color:#fff}
+    .supplier-add-model-btn{width:100%;border-style:dashed;color:var(--t3);font-size:13px;margin-top:4px}
+    .supplier-add-model-btn:hover{border-color:var(--primary);color:var(--primary)}
+    .supplier-model-billing-fields,.supplier-model-tier-fields{margin-top:8px;padding:12px;background:#fff;border:1px solid var(--border-color-input);border-radius:var(--radius-8)}
+    .capability-grid{display:flex;flex-wrap:wrap;gap:8px}
+    .capability-check{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border:1px solid var(--border-color-input);border-radius:var(--radius-8);cursor:pointer;font-size:13px;color:var(--t2);transition:all 0.15s;background:#fff;user-select:none}
+    .capability-check:hover{border-color:var(--primary);color:var(--primary)}
+    .capability-check input{display:none}
+    .capability-check.checked{background:var(--primary);border-color:var(--primary);color:#fff}
+    .radio-card-group{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .radio-card{height:36px;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--border-color-input);border-radius:var(--radius-8);background:#fff;color:var(--t2);font-size:14px;cursor:pointer;transition:all 0.15s}
+    .radio-card:hover{border-color:var(--primary);color:var(--primary)}
+    .radio-card input{accent-color:var(--primary)}
+    .radio-card:has(input:checked){border-color:var(--primary);background:var(--primary-light);color:var(--primary);font-weight:500}
+    .form-textarea{height:auto;min-height:88px;padding:8px 12px;resize:vertical;line-height:1.5715}
+    .price-input-wrap{display:flex;gap:8px}
+    .price-input-wrap .form-input{min-width:0}
+    .price-input-wrap .price-unit{width:84px;flex-shrink:0}
+    .billing-switch-row{display:flex;align-items:center;gap:24px;margin-bottom:12px}
+    .billing-switch-row .form-group{margin-bottom:0}
+    .price-config{display:flex;flex-direction:column;gap:10px}
+    .price-item{padding:10px;border:1px solid var(--border-color-input);border-radius:var(--radius-8);background:#fff}
+    .price-item-row{display:grid;grid-template-columns:minmax(160px,1fr) minmax(100px,128px) 84px max-content 120px;align-items:center;gap:8px}
+    .price-item-row .form-label{margin-bottom:0}
+    .price-item-row .price-unit{width:84px}
+    .price-item-row .form-switch{white-space:nowrap}
+    .price-discount-input{width:120px;flex-shrink:0}
+    .protocol-option{width:100%;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px 10px;padding:10px 12px;border:1px solid var(--border-color-input);border-radius:var(--radius-8);background:#fff}
+    .protocol-option-label{font-size:13px;color:var(--t2);display:flex;align-items:center;gap:6px}
+    .protocol-option input[type="checkbox"]{accent-color:var(--primary)}
+    .protocol-usage{grid-column:2;display:none}
+    .protocol-usage textarea{min-height:88px}
+    .protocol-option.checked{border-color:var(--primary);background:var(--primary-lighter)}
+    .protocol-option.checked .protocol-usage{display:block}
+    .supplier-tier-card{padding:12px;border:1px solid var(--border-color-input);border-radius:var(--radius-8);background:#FAFBFC;margin-bottom:10px}
+    .supplier-tier-card:last-child{margin-bottom:0}
+    .supplier-tier-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:13px;font-weight:600;color:var(--t1)}
+    .supplier-tier-remove{border:none;background:none;color:#F53F3F;cursor:pointer;font-size:12px}
+    .form-switch{position:relative;display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+    .form-switch input{position:absolute;opacity:0;width:0;height:0}
+    .form-switch .switch-track{width:36px;height:20px;background:#D0D5DD;border-radius:10px;transition:background 0.2s;position:relative;flex-shrink:0}
+    .form-switch .switch-track::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.15)}
+    .form-switch input:checked+.switch-track{background:var(--primary)}
+    .form-switch input:checked+.switch-track::after{transform:translateX(16px)}
+    .form-switch .switch-label{font-size:13px;color:var(--t1)}
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sb" id="sidebar"></aside>
+    <main class="main-content" id="main-content">
+      <div class="supplier-page-header">
+        <h1 class="page-title" style="margin-bottom:0">供应商管理</h1>
+      </div>
+      <div class="supplier-filters">
+        <div class="supplier-filters-left">
+          <select class="filter-select" id="filterType" onchange="applyFilters()">
+            <option value="">全部类型</option>
+            <option value="internal">内部</option>
+            <option value="external">外部</option>
+          </select>
+          <input type="text" class="filter-input" id="filterName" placeholder="搜索供应商名称" oninput="applyFilters()" />
+        </div>
+        <button class="btn bp" onclick="openSupplierModal()">添加供应商</button>
+      </div>
+      <div class="card" style="padding:0">
+        <div class="table-wrap ant-table-header">
+          <table class="supplier-table">
+            <thead class="ant-table-thead">
+              <tr>
+                <th style="width:auto">供应商名称</th>
+                <th style="width:120px">供应商类型</th>
+                <th style="width:auto">供应商描述</th>
+                <th style="width:auto">关联模型数量</th>
+                <th style="width:auto">操作</th>
+              </tr>
+            </thead>
+            <tbody id="supplierTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="ant-pagination-mini" id="supplierPagination">
+        <span class="ant-pagination-total-text" id="paginationTotal">共 0 条</span>
+        <ul class="ant-pagination-pages" id="paginationPages"></ul>
+        <div class="ant-pagination-options">
+          <select id="pageSizeSelect" onchange="changePageSize(this.value)">
+            <option value="10" selected>10 条/页</option>
+            <option value="20">20 条/页</option>
+            <option value="50">50 条/页</option>
+          </select>
+          <span class="ant-pagination-options-arrow">▾</span>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="js/data.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/usage-config.js"></script>
+  <script src="js/supplier.js"></script>
+</body>
+</html>
