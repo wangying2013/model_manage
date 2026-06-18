@@ -44,7 +44,7 @@ function renderFilterPanel() {
       id: 'serviceType',
       title: '服务类型',
       items: [
-        { value: 'hybrid', label: '混合服务' },
+        { value: 'hybrid', label: '外部采购' },
         { value: 'local', label: '本地部署' }
       ]
     },
@@ -144,6 +144,7 @@ function applyFilters() {
   const sort = document.getElementById('sortFilter').value;
 
   filteredModels = getModels().filter(m => {
+    if (!isMarketplaceVisibleModel(m)) return false;
     if (search && !m.name.toLowerCase().includes(search) && !m.id.toLowerCase().includes(search)) return false;
 
     if (selectedFilters.provider.length > 0 && !selectedFilters.provider.includes(getModelProvider(m))) return false;
@@ -182,16 +183,31 @@ function applyFilters() {
 
   switch (sort) {
     case 'newest':
-      filteredModels.sort((a, b) => new Date(b.releasedDate) - new Date(a.releasedDate));
+      filteredModels.sort((a, b) => getModelOnlineTime(b) - getModelOnlineTime(a));
+      break;
+    case 'release':
+      filteredModels.sort((a, b) => getModelReleaseTime(b) - getModelReleaseTime(a));
       break;
     case 'price':
-      filteredModels.sort((a, b) => (a.inputPrice + a.outputPrice) - (b.inputPrice + b.outputPrice));
+      filteredModels.sort((a, b) => a.outputPrice - b.outputPrice);
       break;
     default:
       break;
   }
 
   renderModels();
+}
+
+function isMarketplaceVisibleModel(m) {
+  return m.status === 'online' || m.status === 'deprecating';
+}
+
+function getModelOnlineTime(model) {
+  return new Date(model.onlineAt || model.updatedAt || model.releasedDate || 0).getTime();
+}
+
+function getModelReleaseTime(model) {
+  return new Date(model.releasedDate || 0).getTime();
 }
 
 function renderModels() {
@@ -239,7 +255,6 @@ function renderModelCard(model) {
   const statusBadge = model.status !== 'online' ? renderStatusBadge(model.status) : '';
 
   let extraBadges = '';
-  if (model.isHot) extraBadges += '<span class="card-badge card-badge-hot">热门</span>';
   if (model.isNew) extraBadges += '<span class="card-badge card-badge-new">上新</span>';
 
   const rightBadges = (statusBadge || extraBadges) ?
@@ -259,7 +274,7 @@ function renderModelCard(model) {
     '</div>';
   }
 
-  const serviceTypeLabel = model.serviceType === 'hybrid' ? '混合服务' : model.serviceType === 'local' ? '本地部署' : '';
+  const serviceTypeLabel = model.serviceType === 'hybrid' ? '外部采购' : model.serviceType === 'local' ? '本地部署' : '';
   const modelSourceLabel = getModelSource(model);
 
   let priceTooltipItems = '<div class="tooltip-item">命中缓存单价：' + formatPrice(model.cacheHitPrice) + '</div>' +
@@ -291,7 +306,7 @@ function renderModelCard(model) {
         '<div class="meta-item"><span class="meta-label">模型来源</span><span class="meta-value">' + modelSourceLabel + '</span></div>' +
         '<div class="meta-item"><span class="meta-label">服务类型</span><span class="meta-value">' + serviceTypeLabel + '</span></div>' +
         '<div class="meta-item"><span class="meta-label">上下文长度</span><span class="meta-value">' + contextLabel + '</span></div>' +
-        '<div class="meta-item"><span class="meta-label">上线日期</span><span class="meta-value">' + model.releasedDate + '</span></div>' +
+        '<div class="meta-item"><span class="meta-label">发布日期</span><span class="meta-value">' + model.releasedDate + '</span></div>' +
         '<div class="meta-item">' +
           '<span class="meta-label">' +
             '参考输入价格' +

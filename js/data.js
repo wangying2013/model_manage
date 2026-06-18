@@ -970,6 +970,120 @@ const MODELS = [
       { name: "语义搜索", description: "Muses 内部语义检索服务", users: "30K+" },
       { name: "向量数据库", description: "Muses VectorDB 嵌入服务", users: "25K+" }
     ]
+  },
+  {
+    id: "vend/gpt-4.1-legacy",
+    name: "vend/gpt-4.1-legacy",
+    author: "OpenAI",
+    description: "历史采购的 GPT-4.1 兼容模型，已完成迁移并下线，仅用于模型管理状态展示。",
+    icon: "G",
+    iconColor: "#2563EB",
+    categories: ["文本生成", "工具调用"],
+    outputTypes: ["text"],
+    inputModalities: ["text", "image"],
+    contextLength: 128000,
+    inputPrice: 2.0,
+    outputPrice: 8.0,
+    cacheHitPrice: 1.0,
+    cacheMissPrice: 2.0,
+    weeklyTokens: "0",
+    parameters: "",
+    architecture: "Dense Transformer",
+    releasedDate: "2025-04-14",
+    license: "Proprietary",
+    trainingCutoff: "2024-12",
+    status: "offline",
+    updatedAt: "2026-05-12",
+    externalSourcing: true,
+    serviceType: 'hybrid',
+    billingType: "pay-per-use",
+    maxOutputLength: 32768,
+    modelSource: "overseas",
+    featuredModel: false,
+    providers: [
+      { name: "OpenAI Proxy", status: "offline", latency: 0, throughput: 0, uptime: 0, errorRate: 0, failoverPriority: 1, failoverStrategy: "已下线", billingType: "pay-per-use", isFree: false }
+    ],
+    benchmarks: { mmlu: 86.4, humaneval: 80.2, gsm8k: 91.0, hellaswag: 85.1, arc: 89.3, truthfulqa: 70.5 },
+    changelog: [
+      { date: "2026-05-12", version: "offline", changes: [{ type: "Changed", desc: "完成下线" }] }
+    ],
+    apps: []
+  },
+  {
+    id: "vend/claude-3.5-sonnet-legacy",
+    name: "vend/claude-3.5-sonnet-legacy",
+    author: "Anthropic",
+    description: "旧版 Claude Sonnet 采购模型，已由新版本替代并下线。",
+    icon: "C",
+    iconColor: "#7C3AED",
+    categories: ["文本生成", "工具调用"],
+    outputTypes: ["text"],
+    inputModalities: ["text", "image"],
+    contextLength: 200000,
+    inputPrice: 3.0,
+    outputPrice: 15.0,
+    cacheHitPrice: 1.5,
+    cacheMissPrice: 3.0,
+    weeklyTokens: "0",
+    parameters: "",
+    architecture: "Dense Transformer",
+    releasedDate: "2024-10-22",
+    license: "Proprietary",
+    trainingCutoff: "2024-04",
+    status: "offline",
+    updatedAt: "2026-05-18",
+    externalSourcing: true,
+    serviceType: 'hybrid',
+    billingType: "pay-per-use",
+    maxOutputLength: 8192,
+    modelSource: "overseas",
+    featuredModel: false,
+    providers: [
+      { name: "Anthropic Proxy", status: "offline", latency: 0, throughput: 0, uptime: 0, errorRate: 0, failoverPriority: 1, failoverStrategy: "已下线", billingType: "pay-per-use", isFree: false }
+    ],
+    benchmarks: { mmlu: 88.0, humaneval: 82.6, gsm8k: 92.4, hellaswag: 86.7, arc: 90.1, truthfulqa: 74.8 },
+    changelog: [
+      { date: "2026-05-18", version: "offline", changes: [{ type: "Changed", desc: "完成下线" }] }
+    ],
+    apps: []
+  },
+  {
+    id: "prem/muses-rerank-v1",
+    name: "prem/muses-rerank-v1",
+    author: "通义",
+    description: "Muses 早期自研重排序模型，已由新版排序服务替代并下线。",
+    icon: "R",
+    iconColor: "#059669",
+    categories: ["检索"],
+    outputTypes: ["score"],
+    inputModalities: ["text"],
+    contextLength: 4096,
+    inputPrice: 0,
+    outputPrice: 0,
+    cacheHitPrice: 0,
+    cacheMissPrice: 0,
+    weeklyTokens: "0",
+    parameters: "110M",
+    architecture: "Cross Encoder",
+    releasedDate: "2025-08-20",
+    license: "Proprietary",
+    trainingCutoff: "2025-07",
+    status: "offline",
+    updatedAt: "2026-04-30",
+    externalSourcing: false,
+    serviceType: 'local',
+    billingType: "free",
+    maxOutputLength: 1024,
+    modelSource: "domestic",
+    featuredModel: false,
+    providers: [
+      { name: "本地部署", status: "offline", latency: 0, throughput: 0, uptime: 0, errorRate: 0, failoverPriority: 1, failoverStrategy: "已下线", billingType: "free", isFree: true }
+    ],
+    benchmarks: { mmlu: 0, humaneval: 0, gsm8k: 0, hellaswag: 0, arc: 0, truthfulqa: 0 },
+    changelog: [
+      { date: "2026-04-30", version: "offline", changes: [{ type: "Changed", desc: "完成下线" }] }
+    ],
+    apps: []
   }
 ];
 

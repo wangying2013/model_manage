@@ -44,11 +44,13 @@ assert(dataJs.includes("return '海外'"), 'model source helper should support o
 assert(!modelsJs.includes('<span class="meta-label">提供方</span>'), 'marketplace card should remove provider meta item');
 assert(modelsJs.includes('<span class="meta-label">服务类型</span>'), 'marketplace card should use service type copy');
 assert(!modelsJs.includes('<span class="meta-label">模型类型</span>'), 'marketplace card should remove model type copy');
+assert(modelsJs.includes('发布日期'), 'marketplace card should use release date copy');
+assert(detailHtml.includes('data-tab="providers">供应商'), 'detail should keep provider tab');
+assert(modelManagementJs.includes("testing: '未上线'") || read('js/common.js').includes("testing: '未上线'"), 'status copy should support testing as not online');
 
 const tabOrder = [
   'data-tab="providers">供应商',
   'data-tab="apps">调用情况',
-  'data-tab="capability">能力测试',
   'data-tab="changelog">变更记录',
   'data-tab="quota">模型配额'
 ];
@@ -58,5 +60,6 @@ tabOrder.forEach(text => {
   assert(idx > cursor, `detail tabs should contain ${text} in requested order`);
   cursor = idx;
 });
+assert(!detailHtml.includes('data-tab="capability">能力测试'), 'detail tabs should remove capability test tab');
 
 console.log('global content requirement checks passed');

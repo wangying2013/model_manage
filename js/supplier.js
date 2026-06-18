@@ -11,11 +11,11 @@ const PROTOCOL_OPTIONS = [
 ];
 const PRICE_ITEMS = [
   { field: 'inputPrice', label: '输入单价' },
+  { field: 'outputPrice', label: '输出单价' },
   { field: 'cacheHitInputPrice', label: '命中缓存输入单价' },
-  { field: 'cacheWrite5mInputPrice', label: '5m写入缓存输入单价', legacyField: 'cacheWriteInputPrice' },
-  { field: 'cacheWrite1hInputPrice', label: '1h写入缓存输入单价' },
   { field: 'explicitCacheHitInputPrice', label: '显式命中缓存输入单价' },
-  { field: 'outputPrice', label: '输出单价' }
+  { field: 'cacheWrite5mInputPrice', label: '5m写入缓存输入单价', legacyField: 'cacheWriteInputPrice' },
+  { field: 'cacheWrite1hInputPrice', label: '1h写入缓存输入单价' }
 ];
 
 let currentPage = 1;
@@ -186,6 +186,8 @@ function renderSupplierModelCard(model, idx) {
   const billingDisplay = model.billingEnabled ? '' : 'display:none;';
   const basePriceDisplay = model.gradientBillingEnabled ? 'display:none;' : '';
   const tierDisplay = model.gradientBillingEnabled ? '' : 'display:none;';
+  const priceUnit = model.priceUnit || 'CNY';
+  const priceUnitSuffix = priceUnit === 'USD' ? '$' : '￥';
   return '<div class="supplier-model-card" data-model-idx="' + idx + '">' +
     '<div class="supplier-model-card-header"><span class="supplier-model-card-title">模型 #' + (idx + 1) + '</span><button type="button" class="supplier-model-del-btn" onclick="removeSupplierModel(' + idx + ')">删除</button></div>' +
     '<div class="form-row"><div class="form-group"><label class="form-label">模型 ID</label><input type="text" class="form-input" data-field="id" value="' + escapeAttr(model.id || '') + '" placeholder="例如：muses-cloud-qwen3" onchange="updateModelField(' + idx + ', \'id\', this.value)" /></div></div>' +
@@ -194,8 +196,8 @@ function renderSupplierModelCard(model, idx) {
     '<div class="form-row"><div class="form-group"><label class="form-label">输入模态</label><div class="capability-grid">' + renderOptionChecks(model.inputModalities || [], idx, 'inputModalities', MODALITY_OPTIONS) + '</div></div><div class="form-group"><label class="form-label">输出模态</label><div class="capability-grid">' + renderOptionChecks(model.outputModalities || model.outputTypes || [], idx, 'outputModalities', MODALITY_OPTIONS) + '</div></div></div>' +
     '<div class="form-group"><label class="form-label">模型能力 Feature</label><div class="capability-grid">' + renderCapabilityOptions(model, idx) + '</div></div>' +
     '<div class="form-group"><label class="form-label">协议类型</label><div class="capability-grid">' + renderProtocolOptions(model, idx) + '</div></div>' +
-    '<div class="billing-switch-row"><div class="form-group" style="flex:0 0 auto"><label class="form-switch"><input type="checkbox"' + (model.billingEnabled ? ' checked' : '') + ' data-field="billingEnabled" onchange="toggleModelBilling(' + idx + ')" /><span class="switch-track"></span><span class="switch-label">是否计费</span></label></div><div class="form-group" style="flex:0 0 auto"><label class="form-switch"><input type="checkbox"' + (model.gradientBillingEnabled ? ' checked' : '') + ' data-field="gradientBillingEnabled" onchange="toggleGradientBilling(' + idx + ')" /><span class="switch-track"></span><span class="switch-label">梯度计费</span></label></div></div>' +
-    '<div class="supplier-model-billing-fields" style="' + billingDisplay + '"><div class="base-price-config" style="' + basePriceDisplay + '">' + renderPriceConfig(model.basePriceConfig, idx, 'base') + '</div><div class="supplier-model-tier-fields" style="' + tierDisplay + '"><div class="supplier-models-header" style="font-size:13px;margin-bottom:10px">Token 阶梯</div><div class="billing-tiers-container">' + renderBillingTiers(model, idx) + '</div><button type="button" class="btn bc supplier-add-model-btn" onclick="addBillingTier(' + idx + ')">+ 添加阶梯</button></div></div>' +
+    '<div class="billing-controls-row"><div class="form-group" style="flex:0 0 auto"><label class="form-switch"><input type="checkbox"' + (model.billingEnabled ? ' checked' : '') + ' data-field="billingEnabled" onchange="toggleModelBilling(' + idx + ')" /><span class="switch-track"></span><span class="switch-label">是否计费</span></label></div><div class="supplier-model-billing-controls" style="' + billingDisplay + '"><div class="form-group" style="flex:0 0 auto"><label class="form-switch"><input type="checkbox"' + (model.gradientBillingEnabled ? ' checked' : '') + ' data-field="gradientBillingEnabled" onchange="toggleGradientBilling(' + idx + ')" /><span class="switch-track"></span><span class="switch-label">梯度计费</span></label></div><div class="form-group price-unit-field"><label class="form-label">单价单位</label><select class="form-input price-unit" data-field="priceUnit" onchange="updateModelPriceUnit(' + idx + ', this.value)"><option value="CNY"' + (priceUnit === 'CNY' ? ' selected' : '') + '>人民币</option><option value="USD"' + (priceUnit === 'USD' ? ' selected' : '') + '>美元</option></select></div></div></div>' +
+    '<div class="supplier-model-billing-fields" style="' + billingDisplay + '"><div class="form-row model-discount-row"><div class="form-group"><label class="form-label">成本折扣系数</label><input type="number" class="form-input" data-field="costDiscountFactor" value="' + escapeAttr(model.costDiscountFactor ?? '') + '" step="0.01" placeholder="不配置则无" onchange="updateModelField(' + idx + ', \'costDiscountFactor\', parseOptionalFloat(this.value))" /></div><div class="form-group"><label class="form-label">用户折扣系数</label><input type="number" class="form-input" data-field="userDiscountFactor" value="' + escapeAttr(model.userDiscountFactor ?? '') + '" step="0.01" placeholder="不配置则无" onchange="updateModelField(' + idx + ', \'userDiscountFactor\', parseOptionalFloat(this.value))" /></div></div><div class="base-price-config" style="' + basePriceDisplay + '">' + renderPriceConfig(model.basePriceConfig, idx, 'base', undefined, priceUnitSuffix) + '</div><div class="supplier-model-tier-fields" style="' + tierDisplay + '"><div class="supplier-models-header" style="font-size:13px;margin-bottom:10px">Token 阶梯</div><div class="billing-tiers-container">' + renderBillingTiers(model, idx, priceUnitSuffix) + '</div><button type="button" class="btn bc supplier-add-model-btn" onclick="addBillingTier(' + idx + ')">+ 添加阶梯</button></div></div>' +
   '</div>';
 }
 
@@ -229,25 +231,24 @@ function renderProtocolOptions(model, idx) {
   }).join('');
 }
 
-function renderPriceConfig(priceConfig, modelIdx, scope, tierIdx) {
+function renderPriceConfig(priceConfig, modelIdx, scope, tierIdx, unitSuffix) {
   const config = normalizePriceConfig(priceConfig);
-  return '<div class="price-config" data-price-scope="' + scope + '"' + (tierIdx !== undefined ? ' data-tier-idx="' + tierIdx + '"' : '') + '>' + PRICE_ITEMS.map(item => renderPriceItem(config, modelIdx, scope, item, tierIdx)).join('') + '</div>';
+  return '<div class="price-config price-grid" data-price-scope="' + scope + '"' + (tierIdx !== undefined ? ' data-tier-idx="' + tierIdx + '"' : '') + '>' + PRICE_ITEMS.map(item => renderPriceItem(config, modelIdx, scope, item, tierIdx, unitSuffix)).join('') + '</div>';
 }
 
-function renderPriceItem(priceConfig, modelIdx, scope, item, tierIdx) {
+function renderPriceItem(priceConfig, modelIdx, scope, item, tierIdx, unitSuffix) {
   const priceItem = priceConfig[item.field] || createPriceItem();
   const updateArgs = tierIdx !== undefined ? modelIdx + ', \'' + scope + '\', \'' + item.field + '\', ' + tierIdx : modelIdx + ', \'' + scope + '\', \'' + item.field + '\'';
-  const toggleArgs = tierIdx !== undefined ? modelIdx + ', \'' + scope + '\', \'' + item.field + '\', ' + tierIdx : modelIdx + ', \'' + scope + '\', \'' + item.field + '\'';
-  return '<div class="price-item" data-price-field="' + item.field + '"><div class="price-item-row"><label class="form-label">' + item.label + '</label><input type="number" class="form-input" data-price-prop="amount" value="' + (priceItem.amount || 0) + '" step="0.001" onchange="updatePriceItem(' + updateArgs + ', \'amount\', parseFloat(this.value) || 0)" /><select class="form-input price-unit" data-price-prop="unit" onchange="updatePriceItem(' + updateArgs + ', \'unit\', this.value)"><option value="CNY"' + ((priceItem.unit || 'CNY') === 'CNY' ? ' selected' : '') + '>人民币</option><option value="USD"' + (priceItem.unit === 'USD' ? ' selected' : '') + '>美元</option></select><label class="form-switch"><input type="checkbox" data-price-prop="discountEnabled" onchange="togglePriceDiscount(' + toggleArgs + ')"' + (priceItem.discountEnabled ? ' checked' : '') + ' /><span class="switch-track"></span><span class="switch-label">折扣</span></label><input type="number" class="form-input price-discount-input" data-price-prop="discountRatio" value="' + (priceItem.discountRatio || 0) + '" min="0" max="1" step="0.01" placeholder="折扣比例" style="' + (priceItem.discountEnabled ? '' : 'display:none;') + '" onchange="updatePriceItem(' + updateArgs + ', \'discountRatio\', parseFloat(this.value) || 0)" /></div></div>';
+  return '<div class="price-item" data-price-field="' + item.field + '"><div class="price-item-row"><label class="form-label">' + item.label + '</label><div class="price-input-wrap"><input type="number" class="form-input" data-price-prop="amount" value="' + escapeAttr(priceItem.amount ?? '') + '" step="0.001" onchange="updatePriceItem(' + updateArgs + ', \'amount\', parseOptionalFloat(this.value))" /><span class="price-unit-suffix">' + unitSuffix + ' / Mtoken</span></div></div></div>';
 }
 
-function renderBillingTiers(model, idx) {
+function renderBillingTiers(model, idx, unitSuffix) {
   if (!model.billingTiers || !model.billingTiers.length) model.billingTiers = [createBillingTier()];
-  return model.billingTiers.map((tier, tierIdx) => renderBillingTier(tier, idx, tierIdx)).join('');
+  return model.billingTiers.map((tier, tierIdx) => renderBillingTier(tier, idx, tierIdx, unitSuffix)).join('');
 }
 
-function renderBillingTier(tier, modelIdx, tierIdx) {
-  return '<div class="supplier-tier-card" data-tier-idx="' + tierIdx + '"><div class="supplier-tier-header"><span>阶梯 #' + (tierIdx + 1) + '</span><button type="button" class="supplier-tier-remove" onclick="removeBillingTier(' + modelIdx + ', ' + tierIdx + ')">删除</button></div><div class="form-row"><div class="form-group"><label class="form-label">起始 token</label><input type="number" class="form-input" data-tier-field="startToken" value="' + (tier.startToken || 0) + '" onchange="updateBillingTierField(' + modelIdx + ', ' + tierIdx + ', \'startToken\', parseInt(this.value) || 0)" /></div><div class="form-group"><label class="form-label">结束 token</label><input type="number" class="form-input" data-tier-field="endToken" value="' + (tier.endToken || 0) + '" onchange="updateBillingTierField(' + modelIdx + ', ' + tierIdx + ', \'endToken\', parseInt(this.value) || 0)" /></div></div>' + renderPriceConfig(tier.priceConfig, modelIdx, 'tier', tierIdx) + '</div>';
+function renderBillingTier(tier, modelIdx, tierIdx, unitSuffix) {
+  return '<div class="supplier-tier-card" data-tier-idx="' + tierIdx + '"><div class="supplier-tier-header"><span>阶梯 #' + (tierIdx + 1) + '</span><button type="button" class="supplier-tier-remove" onclick="removeBillingTier(' + modelIdx + ', ' + tierIdx + ')">删除</button></div><div class="form-row"><div class="form-group"><label class="form-label">起始 token</label><input type="number" class="form-input" data-tier-field="startToken" value="' + (tier.startToken || 0) + '" onchange="updateBillingTierField(' + modelIdx + ', ' + tierIdx + ', \'startToken\', parseInt(this.value) || 0)" /></div><div class="form-group"><label class="form-label">结束 token</label><input type="number" class="form-input" data-tier-field="endToken" value="' + (tier.endToken || 0) + '" onchange="updateBillingTierField(' + modelIdx + ', ' + tierIdx + ', \'endToken\', parseInt(this.value) || 0)" /></div></div>' + renderPriceConfig(tier.priceConfig, modelIdx, 'tier', tierIdx, unitSuffix) + '</div>';
 }
 
 function escapeAttr(str) {
@@ -271,6 +272,8 @@ function toggleModelBilling(idx) {
   model.billingEnabled = checkbox.checked;
   const billingFields = card.querySelector('.supplier-model-billing-fields');
   if (billingFields) billingFields.style.display = checkbox.checked ? '' : 'none';
+  const billingControls = card.querySelector('.supplier-model-billing-controls');
+  if (billingControls) billingControls.style.display = checkbox.checked ? '' : 'none';
 }
 
 function toggleGradientBilling(idx) {
@@ -310,8 +313,8 @@ function updateProtocolUsage(modelIdx, protocol, value) {
   model.protocolUsage[protocol] = value;
 }
 
-function createPriceItem(amount, unit) {
-  return { amount: amount || 0, unit: unit || 'CNY', discountEnabled: false, discountRatio: 0 };
+function createPriceItem(amount) {
+  return { amount: amount ?? '' };
 }
 
 function createPriceConfig(source) {
@@ -320,15 +323,11 @@ function createPriceConfig(source) {
     const existing = source && source[item.field];
     if (existing && typeof existing === 'object') {
       config[item.field] = {
-        amount: parseFloat(existing.amount) || 0,
-        unit: existing.unit || 'CNY',
-        discountEnabled: !!existing.discountEnabled,
-        discountRatio: parseFloat(existing.discountRatio) || 0
+        amount: existing.amount ?? ''
       };
     } else {
-      const amount = source ? source[item.field] ?? source[item.legacyField] : 0;
-      const unit = source ? source[item.field + 'Unit'] || (item.legacyField ? source[item.legacyField + 'Unit'] : '') : '';
-      config[item.field] = createPriceItem(parseFloat(amount) || 0, unit || 'CNY');
+      const amount = source ? source[item.field] ?? source[item.legacyField] : '';
+      config[item.field] = createPriceItem(amount ?? '');
     }
   });
   return config;
@@ -360,19 +359,6 @@ function updatePriceItem(modelIdx, scope, field, tierIdxOrProp, propOrValue, may
   if (!priceConfig) return;
   if (!priceConfig[field]) priceConfig[field] = createPriceItem();
   priceConfig[field][prop] = value;
-}
-
-function togglePriceDiscount(modelIdx, scope, field, tierIdx) {
-  syncModelCardFields(modelIdx);
-  const card = getModelCard(modelIdx);
-  const selector = scope === 'tier' ? '.price-config[data-price-scope="tier"][data-tier-idx="' + tierIdx + '"]' : '.price-config[data-price-scope="base"]';
-  const priceItemEl = card && card.querySelector(selector + ' .price-item[data-price-field="' + field + '"]');
-  const checkbox = priceItemEl && priceItemEl.querySelector('input[data-price-prop="discountEnabled"]');
-  if (!checkbox) return;
-  if (scope === 'tier') updatePriceItem(modelIdx, scope, field, tierIdx, 'discountEnabled', checkbox.checked);
-  else updatePriceItem(modelIdx, scope, field, 'discountEnabled', checkbox.checked);
-  const discountInput = priceItemEl.querySelector('input[data-price-prop="discountRatio"]');
-  if (discountInput) discountInput.style.display = checkbox.checked ? '' : 'none';
 }
 
 function toggleCapabilityTag(checkbox, modelIdx, tag) {
@@ -427,6 +413,12 @@ function syncModelCardFields(idx) {
   });
   const maxAvailableAmount = card.querySelector('input[data-field="maxAvailableAmount"]');
   if (maxAvailableAmount) model.maxAvailableAmount = parseFloat(maxAvailableAmount.value) || 0;
+  ['costDiscountFactor', 'userDiscountFactor'].forEach(field => {
+    const input = card.querySelector('input[data-field="' + field + '"]');
+    if (input) model[field] = parseOptionalFloat(input.value);
+  });
+  const priceUnit = card.querySelector('[data-field="priceUnit"]');
+  if (priceUnit) model.priceUnit = priceUnit.value;
   const billingEnabled = card.querySelector('input[data-field="billingEnabled"]');
   const gradientBillingEnabled = card.querySelector('input[data-field="gradientBillingEnabled"]');
   if (billingEnabled) model.billingEnabled = billingEnabled.checked;
@@ -458,14 +450,8 @@ function readPriceConfigFromElement(priceConfigEl) {
   PRICE_ITEMS.forEach(item => {
     const itemEl = priceConfigEl.querySelector('.price-item[data-price-field="' + item.field + '"]');
     const amount = itemEl && itemEl.querySelector('input[data-price-prop="amount"]');
-    const unit = itemEl && itemEl.querySelector('select[data-price-prop="unit"]');
-    const discountEnabled = itemEl && itemEl.querySelector('input[data-price-prop="discountEnabled"]');
-    const discountRatio = itemEl && itemEl.querySelector('input[data-price-prop="discountRatio"]');
     config[item.field] = {
-      amount: parseFloat(amount ? amount.value : 0) || 0,
-      unit: unit ? unit.value : 'CNY',
-      discountEnabled: discountEnabled ? discountEnabled.checked : false,
-      discountRatio: parseFloat(discountRatio ? discountRatio.value : 0) || 0
+      amount: parseOptionalFloat(amount ? amount.value : '')
     };
   });
   return config;
@@ -577,6 +563,9 @@ function normalizeModel(model) {
     protocolUsage: { ...(model.protocolUsage || {}) },
     usageConfigId: model.usageConfigId || findUsageConfigIdByLegacyValue(model.usageConfig),
     billingEnabled: !!model.billingEnabled,
+    priceUnit: model.priceUnit || findLegacyPriceUnit(model) || 'CNY',
+    costDiscountFactor: model.costDiscountFactor ?? '',
+    userDiscountFactor: model.userDiscountFactor ?? '',
     basePriceConfig: createPriceConfig(model.basePriceConfig || model),
     gradientBillingEnabled: !!model.gradientBillingEnabled,
     billingTiers: model.billingTiers && model.billingTiers.length ? model.billingTiers.map(tier => ({
@@ -585,6 +574,32 @@ function normalizeModel(model) {
       priceConfig: createPriceConfig(tier.priceConfig || tier)
     })) : [createBillingTier()]
   };
+}
+
+function findLegacyPriceUnit(model) {
+  const sources = [model.basePriceConfig, model, ...(model.billingTiers || []).map(tier => tier.priceConfig || tier)];
+  for (const source of sources) {
+    if (!source) continue;
+    for (const item of PRICE_ITEMS) {
+      const value = source[item.field];
+      if (value && typeof value === 'object' && value.unit) return value.unit;
+      if (source[item.field + 'Unit']) return source[item.field + 'Unit'];
+      if (item.legacyField && source[item.legacyField + 'Unit']) return source[item.legacyField + 'Unit'];
+    }
+  }
+  return '';
+}
+
+function updateModelPriceUnit(idx, value) {
+  syncModelCardFields(idx);
+  updateModelField(idx, 'priceUnit', value);
+  renderSupplierModels();
+}
+
+function parseOptionalFloat(value) {
+  if (value === '') return '';
+  const parsed = parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : '';
 }
 
 function findUsageConfigIdByLegacyValue(value) {

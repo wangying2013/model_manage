@@ -2,7 +2,7 @@ let currentPage = 1;
 let pageSize = 10;
 let editingModelId = null;
 
-const SERVICE_TYPE_TEXT = { hybrid: '混合服务', local: '本地部署' };
+const SERVICE_TYPE_TEXT = { hybrid: '外部采购', local: '本地部署' };
 const MM_STATUS_TEXT = { online: '已上线', testing: '未上线', deprecating: '即将下线', offline: '已下线' };
 const MM_CAPABILITY_TAGS = ['工具调用', '深度思考', '结构化输出'];
 const MM_MODALITY_OPTIONS = [
@@ -84,7 +84,7 @@ function renderModelTable() {
 
   tbody.innerHTML = pageData.map(m => {
     const typeClass = m.serviceType || 'hybrid';
-    const typeLabel = SERVICE_TYPE_TEXT[m.serviceType] || '混合服务';
+    const typeLabel = SERVICE_TYPE_TEXT[m.serviceType] || '外部采购';
     const statusClass = m.status || 'testing';
     const statusLabel = MM_STATUS_TEXT[m.status] || m.status;
     const operator = getOperatorForModel(m);
@@ -95,9 +95,9 @@ function renderModelTable() {
     if (m.status === 'testing') {
       actionsHtml += '<span class="table-action-link" onclick="showOnlineConfirm(\'' + m.id + '\')">上线</span>';
     } else if (m.status === 'online') {
-      actionsHtml += '<span class="table-action-link" style="color:var(--warning)" onclick="showOfflineConfig(\'' + m.id + '\')">下线</span>';
+      actionsHtml += '<span class="table-action-link" onclick="showOfflineConfig(\'' + m.id + '\')">发起下线</span>';
     } else if (m.status === 'deprecating') {
-      actionsHtml += '<span class="table-action-link" onclick="confirmFinalOffline(\'' + m.id + '\')">确认下线</span>';
+      actionsHtml += '<span class="table-action-link" onclick="confirmFinalOffline(\'' + m.id + '\')">完成下线</span>';
     }
     if (m.status === 'testing') {
       actionsHtml += '<span class="table-action-link table-action-link-del" onclick="showDeleteConfirm(\'' + m.id + '\')">删除</span>';
@@ -110,13 +110,25 @@ function renderModelTable() {
       '<td class="mono">' + escapeHtml(m.id) + '</td>' +
       '<td><span class="type-tag ' + typeClass + '">' + typeLabel + '</span></td>' +
       '<td><span class="status-tag ' + statusClass + '">' + statusLabel + '</span></td>' +
-      '<td>' + m.updatedAt + '</td>' +
+      '<td>' + formatModelCreatedAt(m) + '</td>' +
       '<td>' + operator + '</td>' +
-      '<td><div class="table-actions">' + actionsHtml + '</div></td>' +
+      '<td class="action-col"><div class="table-actions">' + actionsHtml + '</div></td>' +
     '</tr>';
   }).join('');
 
   renderPagination(filtered.length);
+}
+
+function formatModelCreatedAt(model) {
+  return formatDateTimeToSecond(model.createdAt || model.releasedDate || model.updatedAt);
+}
+
+function formatDateTimeToSecond(value) {
+  if (!value) return '-';
+  const date = new Date(String(value).includes('T') ? value : String(value).replace(/-/g, '/') + ' 00:00:00');
+  if (Number.isNaN(date.getTime())) return String(value);
+  const pad = n => String(n).padStart(2, '0');
+  return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes()) + ':' + pad(date.getSeconds());
 }
 
 function renderPagination(total) {
@@ -226,6 +238,9 @@ function renderModelFormContent(model, bodyId, isEdit) {
   const serviceType = model && model.serviceType === 'local' ? 'local' : 'hybrid';
   const nameParts = splitModelDisplayName(model ? model.name : '', serviceType);
   const supplierDeploy = normalizeSupplierDeploy(model);
+  const modelSource = model && (model.modelSource || model.region || model.sourceRegion) === 'overseas' ? 'overseas' : 'domestic';
+  const releasedDate = model && (model.releasedDate || model.publishDate) ? (model.releasedDate || model.publishDate) : '';
+  const featuredModel = model && model.featuredModel === true ? 'true' : 'false';
   selectedWorkspaces = model && model.applicationVisibility ? [...model.applicationVisibility] : [];
   selectedMarketplaceUsers = model && model.marketplaceVisibility && model.marketplaceVisibility.users ? [...model.marketplaceVisibility.users] : [];
   selectedMarketplaceDepts = model && model.marketplaceVisibility && model.marketplaceVisibility.departments ? [...model.marketplaceVisibility.departments] : [];
@@ -238,7 +253,7 @@ function renderModelFormContent(model, bodyId, isEdit) {
         <div class="radio-group">
           <label class="radio-option">
             <input type="radio" name="serviceType" value="hybrid" ${serviceType === 'hybrid' ? 'checked' : ''} onchange="onServiceTypeChange()">
-            混合服务
+            外部采购
           </label>
           <label class="radio-option">
             <input type="radio" name="serviceType" value="local" ${serviceType === 'local' ? 'checked' : ''} onchange="onServiceTypeChange()">
@@ -287,6 +302,29 @@ function renderModelFormContent(model, bodyId, isEdit) {
       </div>
       <div class="form-row">
         <div class="form-group">
+          <label class="form-label">模型来源</label>
+          <div class="radio-group">
+            <label class="radio-option"><input type="radio" name="modelSource" value="domestic" ${modelSource === 'domestic' ? 'checked' : ''}>国内</label>
+            <label class="radio-option"><input type="radio" name="modelSource" value="overseas" ${modelSource === 'overseas' ? 'checked' : ''}>海外</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">模型发布时间</label>
+          <div class="date-picker-field">
+            <input type="date" class="form-input" id="modelReleaseDate" value="${escapeHtml(releasedDate)}" onclick="openNativeDatePicker(this)" onfocus="openNativeDatePicker(this)">
+            <button type="button" class="date-picker-button" onclick="openNativeDatePicker(document.getElementById('modelReleaseDate'))">选择</button>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">应用精选模型</label>
+        <div class="radio-group">
+          <label class="radio-option"><input type="radio" name="featuredModel" value="true" ${featuredModel === 'true' ? 'checked' : ''}>是</label>
+          <label class="radio-option"><input type="radio" name="featuredModel" value="false" ${featuredModel === 'false' ? 'checked' : ''}>否</label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
           <label class="form-label">输入模态</label>
           <div class="capability-grid" id="inputModalitiesGrid">
             ${renderModalitiesOptions(model ? model.inputModalities || [] : ['text'], 'inputModalities')}
@@ -329,12 +367,7 @@ function renderModelFormContent(model, bodyId, isEdit) {
 
     <div class="form-section">
       <div class="form-section-title">使用信息</div>
-      ${renderUsageInfo()}
-    </div>
-
-    <div class="form-section">
-      <div class="form-section-title">其他信息</div>
-      ${renderOtherInfo(model)}
+      ${renderUsageInfo(model)}
     </div>
   `;
 }
@@ -369,7 +402,7 @@ function renderSupplierGroup(data, idx) {
       </div>
     </div>
     <div class="billing-fields" id="supplierBillingFields_${idx}">
-      ${renderSupplierModelBillingInfo(supplierModel)}
+      ${renderSupplierModelBillingInfo(supplierModel, idx)}
     </div>
   </div>`;
 }
@@ -393,16 +426,17 @@ function formatSupplierModelOption(model) {
   return escapeHtml(modelId + provider + context);
 }
 
-function renderUsageInfo() {
+function renderUsageInfo(model) {
   const ws = getWorkspaces();
+  const streamSeparator = model && model.streamSeparator !== undefined ? model.streamSeparator : '\\n\\n';
   const workspaceTags = selectedWorkspaces.map(wsId => {
     const w = ws.find(x => x.id === wsId);
     return w ? `<span class="tag-item">${escapeHtml(w.name)}<span class="tag-remove" onclick="removeWorkspaceTag('${wsId}')">✕</span></span>` : '';
   }).join('');
   const marketplaceTags = renderMarketplaceSelectedTags();
-  return `
+  const visibilityHtml = isOnlineStatusForVisibility(model) ? `
       <div class="form-group">
-        <label class="form-label">应用可见范围</label>
+        <label class="form-label">工作空间可见范围</label>
       <div class="tag-selector-wrap" onfocusout="handleTagSelectorBlur(event, 'workspaceDropdown')">
         <div class="tag-selector" id="workspaceSelector" onclick="document.getElementById('workspaceSearchInput').focus()">
           ${workspaceTags}
@@ -423,7 +457,18 @@ function renderUsageInfo() {
         <div class="tag-selector-dropdown" id="marketplaceDropdown"></div>
       </div>
     </div>
+  ` : '';
+  return `
+    ${visibilityHtml}
+    ${model && model.hideStreamSeparator ? '' : `<div class="form-group">
+      <label class="form-label">流式输出结果分隔符</label>
+      <input type="text" class="form-input" id="streamSeparator" value="${escapeHtml(streamSeparator)}" placeholder="例如：\\n\\n">
+    </div>`}
   `;
+}
+
+function isOnlineStatusForVisibility(model) {
+  return !!model && model.status === 'online';
 }
 
 function renderMarketplaceSelectedTags() {
@@ -437,16 +482,6 @@ function renderMarketplaceSelectedTags() {
     if (d) tags += `<span class="tag-item">${escapeHtml(d.name)}<span class="tag-type">部门</span><span class="tag-remove" onclick="removeMarketplaceTag('dept', '${dId}')">✕</span></span>`;
   });
   return tags;
-}
-
-function renderOtherInfo(model) {
-  const streamSeparator = model && model.streamSeparator !== undefined ? model.streamSeparator : '\\n\\n';
-  return `
-    <div class="form-group">
-      <label class="form-label">流式输出结果分隔符</label>
-      <input type="text" class="form-input" id="streamSeparator" value="${escapeHtml(streamSeparator)}" placeholder="例如：\\n\\n">
-    </div>
-  `;
 }
 
 function splitModelDisplayName(name, serviceType) {
@@ -483,6 +518,19 @@ function getSelectedServiceType() {
   return checked ? checked.value : 'hybrid';
 }
 
+function getSelectedRadioValue(name, fallback) {
+  const checked = document.querySelector('input[name="' + name + '"]:checked');
+  return checked ? checked.value : fallback;
+}
+
+function openNativeDatePicker(input) {
+  if (!input) return;
+  input.focus();
+  if (typeof input.showPicker === 'function') {
+    try { input.showPicker(); } catch (e) {}
+  }
+}
+
 function getComposedModelName() {
   const serviceType = getSelectedServiceType();
   const prefix = serviceType === 'local' ? 'prem/' : 'vend/';
@@ -515,7 +563,7 @@ function getSupplierModels(supplierId) {
   return supplier.models || [];
 }
 
-function renderSupplierModelBillingInfo(model) {
+function renderSupplierModelBillingInfo(model, idx) {
   if (!model) return '<div class="billing-empty">选择供应商模型后展示供应商模型信息</div>';
   const enabledText = model.billingEnabled ? '计费' : '免费';
   const basePriceConfig = getSupplierModelBasePriceConfig(model);
@@ -525,7 +573,8 @@ function renderSupplierModelBillingInfo(model) {
   const features = (model.features || []).join('、') || '无';
   const usageConfig = model.usageConfigId || model.usageConfig || '未配置';
   return `
-    <div class="supplier-model-info-card">
+    <button type="button" class="supplier-model-info-toggle" onclick="toggleSupplierModelInfo(this)">展开供应商模型详细信息</button>
+    <div class="supplier-model-info-card supplier-model-info-detail" id="supplierModelInfo_${idx}" hidden>
       <div class="supplier-model-info-head">
         <div>
           <div class="supplier-model-info-title">${escapeHtml(model.id || model.modelName || '-')}</div>
@@ -559,6 +608,15 @@ function renderSupplierModelBillingInfo(model) {
       </div>
     </div>
   `;
+}
+
+function toggleSupplierModelInfo(btn) {
+  const fields = btn.closest('.billing-fields');
+  const detail = fields ? fields.querySelector('.supplier-model-info-detail') : null;
+  if (!detail) return;
+  const nextHidden = !detail.hidden;
+  detail.hidden = nextHidden;
+  btn.textContent = nextHidden ? '展开供应商模型详细信息' : '收起供应商模型详细信息';
 }
 
 function formatBillingPrice(value) {
@@ -609,7 +667,7 @@ function onSupplierModelNameChange(select, idx) {
 
 function updateSupplierBillingInfo(idx, model) {
   const fields = document.getElementById('supplierBillingFields_' + idx);
-  if (fields) fields.innerHTML = renderSupplierModelBillingInfo(model);
+  if (fields) fields.innerHTML = renderSupplierModelBillingInfo(model, idx);
 }
 
 function toggleCapability(event, el) {
@@ -779,6 +837,7 @@ function validateModelForm(editingId) {
 }
 
 function collectModelFormData(forceId) {
+  const existingModel = forceId ? getModels().find(m => m.id === forceId) : null;
   const serviceType = getSelectedServiceType();
   const isLocal = serviceType === 'local';
   const categories = Array.from(document.querySelectorAll('#capabilityGrid input:checked')).map(cb => cb.value);
@@ -792,6 +851,8 @@ function collectModelFormData(forceId) {
   const modelNamePrefix = isLocal ? 'prem/' : 'vend/';
   const modelName = modelNamePrefix + document.getElementById('modelNameSuffix').value.trim();
   const nowDate = new Date().toISOString().split('T')[0];
+  const releaseDate = document.getElementById('modelReleaseDate') ? document.getElementById('modelReleaseDate').value : '';
+  const streamSeparatorEl = document.getElementById('streamSeparator');
 
   return {
     name: modelName,
@@ -801,13 +862,14 @@ function collectModelFormData(forceId) {
     contextLength: parseInt(document.getElementById('contextLength').value, 10) || 0,
     maxOutputLength: parseInt(document.getElementById('maxOutputLength').value, 10) || 0,
     source: isLocal ? 'local' : 'external',
+    modelSource: getSelectedRadioValue('modelSource', 'domestic'),
     serviceType: serviceType,
     applicationVisibility: [...selectedWorkspaces],
     marketplaceVisibility: {
       users: [...selectedMarketplaceUsers],
       departments: [...selectedMarketplaceDepts],
     },
-    streamSeparator: document.getElementById('streamSeparator').value.trim(),
+    streamSeparator: streamSeparatorEl ? streamSeparatorEl.value.trim() : '\\n\\n',
     author: modelProvider,
     modelProvider: modelProvider,
     icon: modelProvider.slice(0, 1) || 'M',
@@ -817,9 +879,10 @@ function collectModelFormData(forceId) {
     weeklyTokens: '0',
     parameters: '',
     architecture: '',
-    releasedDate: nowDate,
+    releasedDate: releaseDate || nowDate,
+    featuredModel: getSelectedRadioValue('featuredModel', 'false') === 'true',
     license: 'Proprietary',
-    status: 'testing',
+    status: existingModel ? existingModel.status : 'testing',
     updatedAt: nowDate,
     externalSourcing: !isLocal,
     billingType: billing.enabled ? 'pay-per-use' : 'free',
@@ -833,8 +896,8 @@ function collectModelFormData(forceId) {
     externalDeploy: isLocal ? [] : supplierDeploy,
     localDeploy: isLocal ? supplierDeploy : null,
     benchmarks: {},
-    changelog: [],
-    apps: [],
+    changelog: existingModel && existingModel.changelog ? existingModel.changelog : [],
+    apps: existingModel && existingModel.apps ? existingModel.apps : [],
   };
 }
 
@@ -959,16 +1022,33 @@ function showOnlineConfirm(id) {
       '<div class="md-h"><h3>上线模型</h3><button class="md-c" onclick="closeOnlineConfirm()">✕</button></div>' +
       '<div class="md-b">' +
         '<p style="font-size:14px;color:var(--text-secondary);margin-bottom:16px">配置 <strong>' + escapeHtml(model.name) + '</strong> 的上线可见范围</p>' +
-        renderUsageInfo() +
+        renderUsageInfo({ status: 'online', streamSeparator: model.streamSeparator, hideStreamSeparator: true }) +
       '</div>' +
-      '<div class="md-f">' +
-        '<button class="btn bc" onclick="closeOnlineConfirm()">取消</button>' +
-        '<button class="btn bp" onclick="confirmOnline(\'' + id + '\')">确认上线</button>' +
+      '<div class="md-f md-f-split">' +
+        '<div class="online-test-actions">' +
+          '<button class="btn bc" onclick="runOnlineModelTest()">测试</button>' +
+          '<span class="online-test-result" id="onlineTestResult">请先测试</span>' +
+        '</div>' +
+        '<div class="md-f-actions">' +
+          '<button class="btn bc" onclick="closeOnlineConfirm()">取消</button>' +
+          '<button class="btn bp" id="onlineConfirmBtn" onclick="confirmOnline(\'' + id + '\')" disabled>确认上线</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
 
   document.body.appendChild(mo);
   requestAnimationFrame(() => { mo.style.display = 'flex'; });
+}
+
+function runOnlineModelTest() {
+  const passed = Math.random() >= 0.5;
+  const result = document.getElementById('onlineTestResult');
+  const confirmBtn = document.getElementById('onlineConfirmBtn');
+  if (result) {
+    result.textContent = passed ? '测试通过' : '测试不通过';
+    result.className = 'online-test-result ' + (passed ? 'pass' : 'fail');
+  }
+  if (confirmBtn) confirmBtn.disabled = !passed;
 }
 
 function closeOnlineConfirm() {
@@ -1011,9 +1091,12 @@ function showOfflineConfig(id) {
   const mo = document.createElement('div');
   mo.className = 'mo';
   mo.id = 'offlineConfigMo';
+  mo.setAttribute('data-model-id', id);
   const defaultDate = new Date();
   defaultDate.setDate(defaultDate.getDate() + 7);
+  const defaultOfflineDate = defaultDate.toISOString().split('T')[0];
   const usageUsers = getModelUsageUsers(model);
+  const defaultMessage = generateOfflineNotifyMessage(model, defaultOfflineDate, '');
   mo.innerHTML =
     '<div class="md" style="width:760px">' +
       '<div class="md-h"><h3>下线模型</h3><button class="md-c" onclick="closeOfflineConfig()">✕</button></div>' +
@@ -1021,27 +1104,34 @@ function showOfflineConfig(id) {
         '<p style="font-size:14px;color:var(--text-secondary);margin-bottom:16px">确定模型<strong>' + escapeHtml(model.name) + '</strong>发起下线？</p>' +
         '<div class="dialog-field">' +
           '<label class="dialog-label">预计下线时间</label>' +
-          '<input type="date" class="dialog-select dialog-date" id="offlineDate" value="' + defaultDate.toISOString().split('T')[0] + '">' +
+          '<input type="date" class="dialog-select dialog-date" id="offlineDate" value="' + defaultOfflineDate + '" onchange="updateOfflineNotifyMessage()">' +
         '</div>' +
         '<div class="dialog-field">' +
           '<label class="dialog-label">替代模型</label>' +
-          '<select class="dialog-select" id="offlineReplacement">' +
+          '<select class="dialog-select" id="offlineReplacement" onchange="updateOfflineNotifyMessage()">' +
             '<option value="">不设置替代模型</option>' +
             replacementOptions +
           '</select>' +
         '</div>' +
         '<div class="dialog-field">' +
-          '<h4 class="offline-usage-title">使用用户名单</h4>' +
+          '<label class="dialog-check">' +
+            '<input type="checkbox" id="offlineNotify" checked onchange="toggleOfflineMessageField()" /> 将使用用户发起 BossHi 群聊' +
+          '</label>' +
+        '</div>' +
+        '<div class="dialog-field" id="offlineMessageField">' +
+          '<label class="dialog-label">消息内容</label>' +
+          '<textarea class="dialog-select dialog-textarea" id="offlineNotifyMessage">' + escapeHtml(defaultMessage) + '</textarea>' +
+        '</div>' +
+        '<div class="dialog-field">' +
+          '<h4 class="offline-usage-title">模型使用名单</h4>' +
           '<table class="mm-table offline-usage-table">' +
-            '<thead><tr><th>用户名称</th><th>使用类型</th><th>使用详情</th><th>最近一次使用时间</th></tr></thead>' +
-            '<tbody>' + usageUsers.map(u => '<tr><td>' + escapeHtml(u.name) + '</td><td>' + escapeHtml(u.type) + '</td><td>' + escapeHtml(u.detail) + '</td><td>' + escapeHtml(u.lastUsedAt) + '</td></tr>').join('') + '</tbody>' +
+            '<thead><tr><th>使用类型</th><th>使用详情</th><th>负责人</th><th>最近一次使用时间</th></tr></thead>' +
+            '<tbody>' + usageUsers.map(u => '<tr><td>' + escapeHtml(u.type) + '</td><td>' + escapeHtml(u.detail) + '</td><td>' + escapeHtml(u.owner) + '</td><td>' + escapeHtml(u.lastUsedAt) + '</td></tr>').join('') + '</tbody>' +
           '</table>' +
         '</div>' +
       '</div>' +
       '<div class="md-f md-f-split">' +
-        '<label class="dialog-check">' +
-          '<input type="checkbox" id="offlineNotify" checked /> 使用用户拉群' +
-        '</label>' +
+        '<span></span>' +
         '<div class="md-f-actions">' +
           '<button class="btn bc" onclick="closeOfflineConfig()">取消</button>' +
           '<button class="btn bp" onclick="confirmOffline(\'' + id + '\')">确定下线</button>' +
@@ -1051,6 +1141,28 @@ function showOfflineConfig(id) {
 
   document.body.appendChild(mo);
   requestAnimationFrame(() => { mo.style.display = 'flex'; });
+}
+
+function generateOfflineNotifyMessage(model, offlineDate, replacementId) {
+  const models = getModels();
+  const replacement = replacementId ? models.find(m => m.id === replacementId) : null;
+  const replacementText = replacement ? '，替代模型为 ' + replacement.name : '，暂无替代模型';
+  return '模型 ' + model.name + ' 计划于 ' + offlineDate + ' 下线' + replacementText + '。请相关使用方提前完成切换，如有问题请联系模型管理团队。';
+}
+
+function updateOfflineNotifyMessage() {
+  const id = document.getElementById('offlineConfigMo')?.getAttribute('data-model-id');
+  const model = getModels().find(m => m.id === id);
+  const offlineDate = document.getElementById('offlineDate')?.value || '';
+  const replacement = document.getElementById('offlineReplacement')?.value || '';
+  const textarea = document.getElementById('offlineNotifyMessage');
+  if (model && textarea) textarea.value = generateOfflineNotifyMessage(model, offlineDate, replacement);
+}
+
+function toggleOfflineMessageField() {
+  const checked = document.getElementById('offlineNotify')?.checked;
+  const field = document.getElementById('offlineMessageField');
+  if (field) field.style.display = checked ? '' : 'none';
 }
 
 function closeOfflineConfig() {
@@ -1070,7 +1182,7 @@ function getModelUsageUsers(model) {
   return MOCK_USERS.slice(0, 5).map((user, idx) => {
     const day = ((seed + idx * 3) % 27) + 1;
     return {
-      name: user.name,
+      owner: user.name,
       type: usageDetails[idx].type,
       detail: usageDetails[idx].detail,
       lastUsedAt: '2026-05-' + String(day).padStart(2, '0') + ' ' + String(10 + idx).padStart(2, '0') + ':30',
@@ -1123,13 +1235,13 @@ function showFinalOfflineConfirm(id) {
   mo.id = 'finalOfflineMo';
   mo.innerHTML =
     '<div class="md">' +
-      '<div class="md-h"><h3>确认下线</h3><button class="md-c" onclick="closeFinalOfflineConfirm()">✕</button></div>' +
+      '<div class="md-h"><h3>完成下线</h3><button class="md-c" onclick="closeFinalOfflineConfirm()">✕</button></div>' +
       '<div class="md-b">' +
         '<p style="font-size:14px;color:var(--text-secondary);margin:0">确认将模型 <strong>' + escapeHtml(model.name) + '</strong> 正式下线？下线后模型将不可使用。</p>' +
       '</div>' +
       '<div class="md-f">' +
         '<button class="btn bc" onclick="closeFinalOfflineConfirm()">取消</button>' +
-        '<button class="btn btn-danger" onclick="applyFinalOffline(\'' + id + '\')">确认下线</button>' +
+        '<button class="btn bp" onclick="applyFinalOffline(\'' + id + '\')">完成下线</button>' +
       '</div>' +
     '</div>';
   document.body.appendChild(mo);

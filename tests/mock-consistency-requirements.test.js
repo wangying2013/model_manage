@@ -82,4 +82,7 @@ modelProviderValues.forEach(provider => {
 
 assertIncludes(dataJs, 'modelProvider', 'mock models should support an explicit model provider when author is not enough');
 
+const offlineModelCount = (dataJs.match(/status:\s*"offline"/g) || []).length;
+assert(offlineModelCount >= 3, `mock data should include at least 3 offline models, found ${offlineModelCount}`);
+
 console.log('mock consistency requirement checks passed');

@@ -45,6 +45,7 @@
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
+      min-width: 980px;
     }
     .mm-table th {
       background: var(--bg-surface);
@@ -64,6 +65,20 @@
     }
     .mm-table tr:hover td { background: var(--bg-hover); }
     .mm-table .mono { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
+    .mm-table-scroll { overflow-x: auto; width: 100%; }
+    .mm-table th.action-col,
+    .mm-table td.action-col {
+      position: sticky;
+      right: 0;
+      background: #fff;
+      z-index: 2;
+      box-shadow: -8px 0 12px rgba(15, 23, 42, 0.04);
+    }
+    .mm-table th.action-col {
+      background: var(--bg-surface);
+      z-index: 3;
+    }
+    .mm-table tr:hover td.action-col { background: var(--bg-hover); }
 
     /* 类型标签 */
     .type-tag {
@@ -172,6 +187,23 @@
     .form-error.show { display: block; }
     .form-row { display: flex; gap: 16px; }
     .form-row .form-group { flex: 1; }
+    .date-picker-field { display: flex; width: 100%; }
+    .date-picker-field .form-input {
+      border-radius: var(--radius-8) 0 0 var(--radius-8);
+    }
+    .date-picker-button {
+      height: 36px;
+      padding: 0 12px;
+      border: 1px solid var(--border-color-input);
+      border-left: none;
+      border-radius: 0 var(--radius-8) var(--radius-8) 0;
+      background: var(--bg-surface);
+      color: var(--primary);
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .date-picker-button:hover { background: var(--primary-light); }
     .radio-group { display: flex; gap: 16px; flex-wrap: wrap; }
     .radio-option {
       display: inline-flex;
@@ -239,6 +271,20 @@
       border-radius: var(--radius-8);
       background: #fff;
     }
+    .supplier-model-info-toggle {
+      display: inline-flex;
+      align-items: center;
+      height: 32px;
+      padding: 0 12px;
+      border: 1px solid var(--primary);
+      border-radius: var(--radius-8);
+      background: #fff;
+      color: var(--primary);
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .supplier-model-info-toggle:hover { background: var(--primary-light); }
+    .supplier-model-info-detail[hidden] { display: none; }
     .supplier-model-info-head {
       display: flex;
       align-items: flex-start;
@@ -497,6 +543,8 @@
     .btn { padding: 8px 16px; border-radius: var(--radius-8); font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; }
     .bp { background: var(--primary); color: #fff; }
     .bp:hover { background: var(--primary-hover); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn:disabled:hover { background: var(--primary); color: #fff; }
     .bc { background: #fff; color: var(--text-secondary); border: 1px solid var(--border-color); }
     .bc:hover { border-color: var(--primary); color: var(--primary); }
     .btn-danger { background: var(--danger); color: #fff; }
@@ -510,11 +558,18 @@
       border-radius: var(--radius-8); font-size: 13px; background: #fff; appearance: auto;
       color: var(--text-primary); outline: none;
     }
+    .dialog-textarea { height: 96px; padding: 8px 10px; line-height: 1.5; resize: vertical; font-family: var(--font-family); }
     .dialog-date { width: 100%; }
     .dialog-check { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); cursor: pointer; }
     .dialog-check input { margin: 0; }
     .offline-usage-title { margin: 4px 0 10px; font-size: 14px; font-weight: 600; color: var(--text-primary); }
-    .offline-usage-table { font-size: 12px; }
+    .offline-usage-table { font-size: 12px; min-width: 0; table-layout: fixed; }
+    .offline-usage-table th,
+    .offline-usage-table td { white-space: normal; overflow-wrap: anywhere; }
+    .online-test-actions { display: flex; align-items: center; gap: 10px; }
+    .online-test-result { font-size: 13px; color: var(--text-tertiary); }
+    .online-test-result.pass { color: var(--success); }
+    .online-test-result.fail { color: var(--danger); }
   </style>
 </head>
 <body>
@@ -525,7 +580,7 @@
       <div class="mm-toolbar">
         <select id="filterType" class="fs-auto" onchange="applyFilters()">
           <option value="">全部类型</option>
-          <option value="hybrid">混合服务</option>
+          <option value="hybrid">外部采购</option>
           <option value="local">本地部署</option>
         </select>
         <select id="filterStatus" class="fs-auto" onchange="applyFilters()">
@@ -540,6 +595,7 @@
         <button class="btn bp" onclick="openAddModelDrawer()">+ 添加模型</button>
       </div>
       <div class="card" style="padding:0;overflow:hidden">
+        <div class="mm-table-scroll">
         <table class="mm-table">
           <thead>
             <tr>
@@ -547,13 +603,14 @@
               <th>模型 ID</th>
               <th>服务类型</th>
               <th>模型状态</th>
-              <th>更新时间</th>
+              <th>创建时间</th>
               <th>操作人</th>
-              <th>操作</th>
+              <th class="action-col">操作</th>
             </tr>
           </thead>
           <tbody id="modelTableBody"></tbody>
         </table>
+        </div>
       </div>
       <div class="mm-pagination">
         <span class="mm-pagination-total" id="paginationTotal"></span>

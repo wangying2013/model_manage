@@ -44,26 +44,37 @@ assertNotIncludes(supplierJs, '供应商模型配置', 'model drawer should not 
   'Claude协议',
   'OpenAI协议',
   '命中缓存输入单价',
+  '输出单价',
+  '显式命中缓存输入单价',
   '5m写入缓存输入单价',
   '1h写入缓存输入单价',
-  '显式命中缓存输入单价',
   '梯度计费',
-  '折扣'
+  '成本折扣系数',
+  '用户折扣系数',
+  '不配置则无',
+  '/ Mtoken'
 ].forEach(text => assertIncludes(supplierJs, text, `model drawer should include ${text}`));
 
 assertIncludes(supplierJs, "cacheWrite5mInputPrice", 'model billing should include 5m cache write input price field');
 assertIncludes(supplierJs, "cacheWrite1hInputPrice", 'model billing should include 1h cache write input price field');
 assertIncludes(supplierJs, "renderPriceConfig", 'model billing should render price config as a reusable group');
-assertIncludes(supplierJs, "renderPriceItem", 'each price item should render its own discount controls');
-assertIncludes(supplierJs, "togglePriceDiscount", 'each price item should support independent discount toggles');
+assertIncludes(supplierJs, "renderPriceItem", 'each price item should render a price input');
+assertIncludes(supplierJs, "priceUnit", 'each model should configure price unit once');
+assertIncludes(supplierJs, "billing-controls-row", 'billing, gradient billing, and price unit should share one row');
+assertIncludes(supplierJs, 'placeholder="不配置则无"', 'model discount empty copy should be inside the input');
+assertNotIncludes(supplierJs, '<div class="form-help">不配置则无</div>', 'model discount empty copy should not render below the input');
+assertNotIncludes(supplierJs, "togglePriceDiscount", 'price items should not support independent discount toggles');
+assertNotIncludes(supplierJs, "discountEnabled", 'price items should not keep independent discount switches');
+assertNotIncludes(supplierJs, "discountRatio", 'price items should not keep independent discount ratios');
 assertIncludes(supplierJs, "basePriceConfig", 'non-gradient billing should store one base price config');
 assertIncludes(supplierJs, "priceConfig", 'gradient billing tiers should store a full price config per tier');
 assertNotIncludes(supplierJs, '计费单价', 'gradient tiers should no longer use a single tier price');
 assertIncludes(supplierJs, '<select class="form-input" data-protocol-usage', 'protocol usage config should use select');
 assertIncludes(supplierJs, 'renderUsageConfigOptions(protocolUsage', 'protocol usage select should use usage config options');
 assertNotIncludes(supplierJs, 'data-field="usageConfigId"', 'supplier model drawer should not keep standalone usage config select');
-assertIncludes(supplierJs, 'billing-switch-row', 'billing and gradient switches should share one row');
-assertIncludes(supplierJs, 'price-item-row', 'price item controls should use a one-line layout');
+assertIncludes(supplierJs, 'billing-controls-row', 'billing switch should keep row layout');
+assertIncludes(supplierJs, 'price-item-row', 'price item controls should use a compact layout');
+assertIncludes(supplierJs, 'price-grid', 'price items should render two per row');
 assertNotIncludes(supplierJs, '费用折扣', 'discount label should use shorter copy');
 
 ['工具调用', '深度思考', '格式化输出'].forEach(text => {

@@ -1,5 +1,5 @@
 // ========== Status & Billing Helpers ==========
-const STATUS_TEXT = { testing: '测试中', online: '已上线', deprecating: '即将下线', offline: '已下线' };
+const STATUS_TEXT = { testing: '未上线', online: '已上线', deprecating: '即将下线', offline: '已下线' };
 const BILLING_TEXT = { 'pay-per-use': '按量计费', free: '免费', subscription: '包年包月' };
 
 function renderStatusBadge(status, large) {

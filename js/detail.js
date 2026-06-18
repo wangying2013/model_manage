@@ -92,12 +92,16 @@ function renderStatCards() {
   const outputCapabilities = formatCapabilityList(m.outputTypes);
   const statsEl = document.getElementById('statCards');
   statsEl.innerHTML =
+    '<div class="stat-card"><div class="stat-card-label">服务类型</div><div class="stat-card-value stat-card-text">' + getModelServiceType(m) + '</div></div>' +
     '<div class="stat-card"><div class="stat-card-label">模型来源</div><div class="stat-card-value stat-card-text">' + getModelSource(m) + '</div></div>' +
+    '<div class="stat-card"><div class="stat-card-label">输入模态</div><div class="stat-card-value stat-card-text">' + inputCapabilities + '</div></div>' +
+    '<div class="stat-card"><div class="stat-card-label">输出模态</div><div class="stat-card-value stat-card-text">' + outputCapabilities + '</div></div>' +
     '<div class="stat-card"><div class="stat-card-label">上下文长度</div><div class="stat-card-value">' + (m.contextLength > 0 ? formatContextLength(m.contextLength) : 'N/A') + '</div></div>' +
-    '<div class="stat-card"><div class="stat-card-label">输入能力</div><div class="stat-card-value stat-card-text">' + inputCapabilities + '</div></div>' +
-    '<div class="stat-card"><div class="stat-card-label">输出能力</div><div class="stat-card-value stat-card-text">' + outputCapabilities + '</div></div>' +
-    '<div class="stat-card"><div class="stat-card-label">近 7日调用量</div><div class="stat-card-value">' + m.weeklyTokens + ' tokens</div></div>' +
-    '<div class="stat-card"><div class="stat-card-label">上线时间</div><div class="stat-card-value stat-card-text">' + m.releasedDate + '</div></div>';
+    '<div class="stat-card"><div class="stat-card-label">发布日期</div><div class="stat-card-value stat-card-text">' + m.releasedDate + '</div></div>';
+}
+
+function getModelServiceType(model) {
+  return model.serviceType === 'local' ? '本地部署' : '外部采购';
 }
 
 function formatCapabilityList(items) {
@@ -122,10 +126,6 @@ function renderTabContent(tab) {
   if (!contentEl) return;
 
   switch (tab) {
-    case 'capability':
-      contentEl.innerHTML = renderCapabilityTab();
-      bindCapabilityEvents();
-      break;
     case 'apps':
       contentEl.innerHTML = renderAppsTab();
       setTimeout(renderAppsMetricCharts, 100);
@@ -154,10 +154,6 @@ function renderProvidersTab() {
     const isAvailable = p.status === 'online' || p.status === 'available';
     const statusText = isAvailable ? '可用' : '异常';
     const statusClass = isAvailable ? 'provider-status-available' : 'provider-status-abnormal';
-    const latencyP99 = p.latencyP99 !== undefined ? p.latencyP99 : p.latency;
-    const oneDayErrorRate = p.oneDayErrorRate !== undefined ? p.oneDayErrorRate : p.errorRate;
-    const currentThroughput = p.currentThroughput !== undefined ? p.currentThroughput : p.throughput;
-    const availableThroughput = p.availableThroughput !== undefined ? p.availableThroughput : p.throughput;
     const priceConfig = [
       { label: '输入单价', value: p.inputPrice !== undefined ? p.inputPrice : m.inputPrice },
       { label: '命中缓存输入单价', value: p.cacheHitInputPrice !== undefined ? p.cacheHitInputPrice : m.cacheHitPrice },
@@ -172,11 +168,6 @@ function renderProvidersTab() {
         '<div class="provider-status-dot ' + (isAvailable ? 'online' : 'abnormal') + '"></div>' +
         '<strong style="font-size:15px">' + p.name + '</strong>' +
         '<span class="provider-status-tag ' + statusClass + '" style="margin-left:8px">' + statusText + '</span>' +
-      '</div>' +
-      '<div class="provider-card-stats" style="grid-template-columns:repeat(3, 1fr);margin-top:12px">' +
-        '<div class="provider-stat"><span class="stat-label">延迟p99</span><span class="stat-value">' + latencyP99 + 'ms</span></div>' +
-        '<div class="provider-stat"><span class="stat-label">吞吐量</span><span class="stat-value">' + currentThroughput + '/' + availableThroughput + ' tok/s</span></div>' +
-        '<div class="provider-stat"><span class="stat-label">近一天调用错误率</span><span class="stat-value">' + oneDayErrorRate + '%</span></div>' +
       '</div>' +
       '<div class="provider-price-config">' +
         priceConfig.map(item =>

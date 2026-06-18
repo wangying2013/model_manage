@@ -78,18 +78,24 @@
     .radio-card input{accent-color:var(--primary)}
     .radio-card:has(input:checked){border-color:var(--primary);background:var(--primary-light);color:var(--primary);font-weight:500}
     .form-textarea{height:auto;min-height:88px;padding:8px 12px;resize:vertical;line-height:1.5715}
-    .price-input-wrap{display:flex;gap:8px}
+    .price-input-wrap{display:flex;align-items:center;gap:8px}
     .price-input-wrap .form-input{min-width:0}
-    .price-input-wrap .price-unit{width:84px;flex-shrink:0}
+    .price-unit-suffix{font-size:12px;color:var(--t3);white-space:nowrap}
+    .billing-controls-row,.supplier-model-billing-controls{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+    .billing-controls-row{margin-bottom:12px}
+    .billing-controls-row .form-group,.supplier-model-billing-controls .form-group{margin-bottom:0}
     .billing-switch-row{display:flex;align-items:center;gap:24px;margin-bottom:12px}
     .billing-switch-row .form-group{margin-bottom:0}
+    .price-unit-field{display:flex;align-items:center;gap:8px}
+    .price-unit-field .form-label{margin-bottom:0}
+    .price-unit-field .price-unit{width:104px}
     .price-config{display:flex;flex-direction:column;gap:10px}
+    .price-config.price-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
     .price-item{padding:10px;border:1px solid var(--border-color-input);border-radius:var(--radius-8);background:#fff}
-    .price-item-row{display:grid;grid-template-columns:minmax(160px,1fr) minmax(100px,128px) 84px max-content 120px;align-items:center;gap:8px}
+    .price-item-row{display:grid;grid-template-columns:minmax(120px,1fr) minmax(0,1fr);align-items:center;gap:8px}
     .price-item-row .form-label{margin-bottom:0}
-    .price-item-row .price-unit{width:84px}
-    .price-item-row .form-switch{white-space:nowrap}
-    .price-discount-input{width:120px;flex-shrink:0}
+    .model-discount-row{margin-bottom:12px}
+    @media (max-width: 720px){.price-config.price-grid{grid-template-columns:1fr}.price-item-row{grid-template-columns:1fr}.price-unit-field{width:100%}}
     .protocol-option{width:100%;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px 10px;padding:10px 12px;border:1px solid var(--border-color-input);border-radius:var(--radius-8);background:#fff}
     .protocol-option-label{font-size:13px;color:var(--t2);display:flex;align-items:center;gap:6px}
     .protocol-option input[type="checkbox"]{accent-color:var(--primary)}
